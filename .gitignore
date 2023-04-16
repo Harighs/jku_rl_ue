@@ -1,4 +1,4 @@
+*.zip
 train/
 val/
-*.zip
-*.onnx
+
