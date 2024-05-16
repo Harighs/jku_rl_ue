@@ -1,0 +1,79 @@
+\documentclass{article}
+% \usepackage[margin=0.5in]{geometry} % Adjusts the margin; change values as needed
+\usepackage{geometry}
+ \geometry{
+ a4paper,
+ total={170mm,257mm},
+ left=20mm,
+ top=3mm,
+ }
+\usepackage{amsmath}
+\usepackage{amssymb}
+
+\title{Querry and Document Embedding pipeline for EVG - AI Service}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+\vspace{-10mm} 
+Given a query $Q$ from user and a set of documents $\{D_1, D_2, \ldots, D_m\}$ from document chunks from ECM, we aim to aggregate the embeddings of these documents based on their relevance to $Q$, producing a final embedding $\text{Emb}_{\text{final}}$ suitable for feeding into a LLM to DGX-H100.
+
+\section*{Preprocessing}
+
+The preprocessing step $P(\cdot)$ involves converting all text to lowercase, removing punctuation, and optionally removing stop words.
+
+\[
+Q' = P(Q)
+\]
+\[
+D'_j = P(D_j) \quad \forall j \in \{1, 2, \ldots, m\}
+\]
+
+\section*{Tokenization}
+
+The tokenization function $\tau(\cdot)$ splits the preprocessed text into a sequence of tokens.
+
+\[
+\tau(Q') = [q_1, q_2, \ldots, q_n]
+\]
+\[
+\tau(D'_j) = [d_{j1}, d_{j2}, \ldots, d_{jk_j}] \quad \forall j
+\]
+
+\section*{Embedding}
+
+Each token $w_i$ is mapped to an embedding vector $v_i$ using an embedding function $E(\cdot)$. The document embeddings are the average of their word embeddings.
+
+\[
+E(q_i) = v_{q_i} \in \mathbb{R}^d
+\]
+\[
+E(d_{ji}) = v_{d_{ji}} \in \mathbb{R}^d
+\]
+\[
+\text{Emb}(Q) = \frac{1}{n} \sum_{i=1}^{n} E(q_i)
+\]
+\[
+\text{Emb}(D_j) = \frac{1}{k_j} \sum_{i=1}^{k_j} E(d_{ji}) \quad \forall j
+\]
+
+\section*{Similarity Computation}
+
+The similarity between the query embedding $\text{Emb}(Q)$ and each document embedding $\text{Emb}(D_j)$ is calculated using cosine similarity.
+
+\[
+S_j = \frac{\text{Emb}(Q) \cdot \text{Emb}(D_j)}{\|\text{Emb}(Q)\| \|\text{Emb}(D_j)\|} \quad \forall j
+\]
+
+\section*{Aggregating Document Embeddings}
+
+After computing the similarity scores, select a subset of documents $\{D^*\}$ based on the highest scores. The final embedding $\text{Emb}_{\text{final}}$ is a weighted average of the embeddings of the selected documents, weighted by their similarity scores.
+
+\[
+\text{Emb}_{\text{final}} = \frac{\sum_{D_j \in D^*} S_j \times \text{Emb}(D_j)}{\sum_{D_j \in D^*} S_j}
+\]
+
+This final embedding $\text{Emb}_{\text{final}}$ represents the collective information from the documents most relevant to the query, ready to be used as input for an LLM.
+
+\end{document}
